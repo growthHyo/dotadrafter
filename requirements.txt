@@ -1,0 +1,7 @@
+python3
+pip3
+numpy
+flask
+peewee
+requests_futures
+tensorflow

@@ -1,0 +1,211 @@
+<html>
+    <head>
+        <title>DOTA Drafter</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+        <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+		<style>
+			div.pick > img {
+				width:100%;
+			}
+            
+            #r_suggest,
+            #d_suggest{
+                width:150;
+                display:flex;
+                flex-wrap:wrap;
+                align-items:flex-start;
+            }
+            
+            .r_suggest,
+            .d_suggest{
+                margin:2px;
+                border:1px solid;
+                border-color:#CCCCCC;
+                padding:3px;
+                width:60px;
+            }
+            
+            .r_suggest > span,
+            .d_suggest > span{
+                width:100%;
+                padding-left: 15px;
+            }
+            
+            div.pick{
+                border-style:inset;
+                border-width:5px;
+                border-radius:5px;
+                background-color:#D0D0D0;
+                margin:10px;
+                width:135px;
+                height:76px;
+            }
+		</style>
+        <script>
+            var get_hero_portrait = function(h, hq){
+                var url = '<img src="http://cdn.dota2.com/apps/dota2/images/heroes/' + h.split(" ").join("_");
+                if (hq){
+                    url += '_lg.png">';
+                } else {
+                    url += '_sb.png">';
+                }
+                return url;
+            }
+            
+            var calc =  function(){
+                var d_slots = 5-$("#d_heroes").children().length;
+                var r_slots = 5-$("#r_heroes").children().length;
+                for (var i=0; i<d_slots; i++){
+                    $("#d_heroes").append('<div class="pick"></div>');
+                }
+                for (var i=0; i<r_slots; i++){
+                    $("#r_heroes").append('<div class="pick"></div>');
+                }
+                
+                var r_heroes = '';
+                $("#r_heroes").children().each(function(){
+                    if (this.id.length > 0){
+                        r_heroes += this.id + ',';
+                    }
+                });
+                r_heroes += $("#r_hero_input").val().toLowerCase();
+                
+                var d_heroes = '';
+                $("#d_heroes").children().each(function(){
+                    if (this.id.length > 0){
+                        d_heroes += this.id + ',';
+                    }
+                });
+                d_heroes += $("#d_hero_input").val().toLowerCase();
+                
+                $("#r_hero_input").val('');
+                $("#d_hero_input").val('');
+                
+                $.ajax({
+                    dataType: "json",
+                    url: "/calc",
+                    data: {
+                        r_hero_input: r_heroes,
+                        d_hero_input: d_heroes
+                    }
+                }).done(function(data) {
+                    $("#r_heroes").html('');
+                    $("#d_heroes").html('');
+					$("#r_suggest").html('');
+					$("#d_suggest").html('');
+                    
+                    for (h in data.heroes.r){
+                        hero = data.heroes.r[h]
+                        $("#r_heroes").append('<div id="' + hero + '" title="' + hero + '" class="pick">' + get_hero_portrait(hero, true) + '</div>');
+                    }
+                    for (h in data.heroes.d){
+                        hero = data.heroes.d[h]
+                        $("#d_heroes").append('<div id="' + hero + '" title="' + hero + '" class="pick">' + get_hero_portrait(hero, true) + '</div>');
+                    }
+                    var d_slots = 5-$("#d_heroes").children().length;
+                    var r_slots = 5-$("#r_heroes").children().length;
+                    for (var i=0; i<d_slots; i++){
+                        $("#d_heroes").append('<div class="pick"></div>');
+                    }
+                    for (var i=0; i<r_slots; i++){
+                        $("#r_heroes").append('<div class="pick"></div>');
+                    }
+                    
+                    $("div.pick").click(function(){
+                        if ($(this)[0].id.length > 0){
+                            $(this).remove();
+                            calc();
+                        }
+                    });
+                    
+                    $("#r_score").html((data.prediction[0]*100).toFixed(1) + "%")
+                    $("#d_score").html((data.prediction[1]*100).toFixed(1) + "%")
+                    
+                    r_suggest = Object.keys(data.heroes.r_next).sort(function(b,a){
+                        return data.heroes.r_next[a]-data.heroes.r_next[b]
+                    })
+                    for (var i=0;i<((16 < r_suggest.length)? 16 : r_suggest.length);i++){
+                        hero = r_suggest[i];
+						score = (data.heroes.r_next[hero]*100).toFixed(1);
+						html = '<div data-hero="' + hero + '" title="' + hero + '" class="r_suggest">'
+						html += get_hero_portrait(hero);
+						html += '<span>' + score + '</span>';
+						html += '</div>';
+						$("#r_suggest").append(html);
+                    }
+					d_suggest = Object.keys(data.heroes.d_next).sort(function(b,a){
+                        return data.heroes.d_next[a]-data.heroes.d_next[b]
+                    })
+                    for (var i=0;i<((16 < d_suggest.length)? 16 : d_suggest.length);i++){
+                        hero = d_suggest[i];
+						score = (data.heroes.d_next[hero]*100).toFixed(1);
+						html = '<div data-hero="' + hero + '" title="' + hero + '" class="d_suggest">'
+						html += get_hero_portrait(hero);
+						html += '<span>' + score + '</span>';
+						html += '</div>';
+						$("#d_suggest").append(html);
+                    }
+					$("div.r_suggest").click(function(){
+                        $("#r_hero_input").val($(this).data('hero'));
+                        calc();
+                    });
+                    $("div.d_suggest").click(function(){
+                        $("#d_hero_input").val($(this).data('hero'));
+                        calc();
+                    });
+                });
+            };
+            
+            $(function() {
+                calc();
+                $(":input").keyup(function (e) {
+                    if (e.keyCode == 13) {
+                        calc();
+                    }
+                });
+                
+                var heroes = [
+                    {% for hero in heroes %}'{{hero}}',{% endfor %}
+                ];
+                $("#r_hero_input").autocomplete({source: heroes});
+                $("#d_hero_input").autocomplete({source: heroes});
+            });
+        </script>
+    </head>
+    <body>
+        <div style="max-width:1000px; margin:auto">
+            <div id="picks" style="display:flex">
+                <div style="flex:1; margin:10px">
+                    <label>Radiant:</label><br>
+                    <input id="r_hero_input" style="width:100%">
+                </div>
+                <div style="flex:1; margin:10px">
+                    <label>Dire:</label><br>
+                    <input id="d_hero_input" style="width:100%">
+                </div>
+            </div>
+            <div style="display:flex">
+                <div id="r_suggest">
+                </div>
+                <div style="border-style:groove; border-width:2px; border-color:#8888CC; flex:1; display:flex; margin:5px 15px 15px 15px;">
+                    <div id="r_heroes" style="margin:10px; flex:1">
+                    </div>
+                    <div style="flex:2">
+                        <div id="result" style="width:90%; max-width:250px; margin:auto; margin-top:100px; font-size:2em">
+                            <span id="r_score" style="color:green"></span> vs <span id="d_score" style="color:red"></span>
+                        </div>
+                    </div>
+                    <div id="d_heroes" style="margin:10px; flex:1">
+                    </div>
+                </div>
+                <div id="d_suggest">
+                </div>
+            </div>
+            <div style="margin:10px; display:flex; justify-content:space-between">
+                
+                
+            </div>
+        </div>
+    </body>
+</html>
