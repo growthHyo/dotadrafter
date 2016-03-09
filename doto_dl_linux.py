@@ -1,17 +1,10 @@
-import requests
-from requests_futures.sessions import FuturesSession
 import datetime as dt
 import time
-import sys
 from drafterANN import *
-import socket
-
-api_keys = ['FE70CE9FC0D6D99279498CE852587F59','2FEC67172AAC0C393EC209A225A7E51E']
-api_key_num = 1
-api_key = api_keys[api_key_num]
-sleep_time = 7000
+from dota_api import Dota_API
 
 drafter = DotoAnn()
+api = Dota_API()
 
 next_id = '1808518935'
 latest_start_time = None
@@ -20,21 +13,16 @@ for m in Match.select().order_by(Match.seq_num.desc()).limit(1):
     next_id = m.seq_num + 1
 
 i = 0
-errors = 0
-session = FuturesSession()
 
-def next_matches():
-    url = 'https://api.steampowered.com/IDOTA2Match_570/GetMatchHistoryBySequenceNum/V001/?key=' + api_key + '&start_at_match_seq_num=' + str(next_id) + '&min_players=10'
-    return session.get(url, timeout=4)
 
-req = next_matches()
+req = api.matches_get(True, next_id)
 
 while True:
     i += 1
     try:
         if i%1000==1:
-            print('Errors: ', errors)
-            errors = 0
+            print('Errors: ', api.errors)
+            api.errors = 0
             print(time.strftime("%H:%M:%S") + ": " + str(latest_start_time))
             inp = np.zeros((1, n_input), np.int)
             inp[0][7] = 1
@@ -51,34 +39,10 @@ while True:
         if i%3000==0:
             print("Accuracy:", drafter.test_accuracy())
     
-        try:
-            r = req.result()
-        except (requests.ConnectionError, requests.Timeout, socket.timeout):
-            #print("Unexpected error:", sys.exc_info()[0])
-            errors += 1
-            time.sleep(sleep_time/1000)
-            req = next_matches()
-            continue
+        matches = api.matches_result(req)
         
-        if (r.status_code != 200):
-            errors += 1
-            time.sleep(sleep_time/1000)
-            req = next_matches()
-            continue
-        if 'matches' in r.json()['result']:
-            matches = r.json()['result']['matches']
-        else:
-            time.sleep(sleep_time/1000)
-            req = next_matches()
-            continue
-
-        if len(matches) == 0:
-            time.sleep(sleep_time/1000)
-            req = next_matches()
-            continue
-            
         next_id = matches[-1]['match_seq_num'] + 1 #+ ((0 * len(matches)) // 100)
-        req = next_matches()
+        req = api.matches_get(True, next_id)
         
         matches_bulk = list()
 
@@ -125,12 +89,12 @@ while True:
         drafter.save()
         db.close()
         sess.close()
-        print("Errors: ", errors)
+        print("Errors: ", api.errors)
         print("Saved")
         raise e
     
 drafter.save()
 db.close()
 sess.close()
-print("Errors: ", errors)
+print("Errors: ", api.errors)
 print("Saved")
