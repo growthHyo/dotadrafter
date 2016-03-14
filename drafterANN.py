@@ -40,7 +40,7 @@ hero_translations = {
 }
     
 # Parameters
-learning_rate = 0.00001
+learning_rate = 0.0001
 epoch_size = 3000
 max_heroes = 120
 
