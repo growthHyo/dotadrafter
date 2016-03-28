@@ -40,7 +40,7 @@ hero_translations = {
 }
     
 # Parameters
-learning_rate = 0.0001
+learning_rate = 0.00001
 epoch_size = 3000
 max_heroes = 120
 
@@ -167,13 +167,13 @@ class DotoAnn:
         out = self.run(inp)
         current_ch = out[n_input]
         
-        picks = dict()
-        counters = dict()
+        picks = []
+        counters = []
 
         for h in heroes:
             if h not in r_heroes and h not in d_heroes:
-                picks[heroes[h]] = float(out[h][0])
-                counters[heroes[h]] = float(out[h+max_heroes][1])
+                picks.append({'hero':heroes[h], 'score':float(out[h][0])})
+                counters.append({'hero':heroes[h], 'score':float(out[h+max_heroes][1])})
 
         resp = dict()
         #resp = {'r_picks':'','d_picks':''}

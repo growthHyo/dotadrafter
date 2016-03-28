@@ -5,6 +5,10 @@
         <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
         <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
 		<style>
+            body {
+                background-image: url("http://p1.pichost.me/i/56/1798106.jpg");
+            }
+            
 			div.pick > img {
 				width:100%;
 			}
@@ -15,6 +19,7 @@
                 display:flex;
                 flex-wrap:wrap;
                 align-items:flex-start;
+                align-self:flex-start;
             }
             
             .r_suggest,
@@ -24,6 +29,8 @@
                 border-color:#CCCCCC;
                 padding:3px;
                 width:60px;
+                cursor:pointer;
+                cursor:hand;
             }
             
             .r_suggest > span,
@@ -40,9 +47,33 @@
                 margin:10px;
                 width:135px;
                 height:76px;
+                cursor:pointer;
+                cursor:hand;
+            }
+            
+            div.nopick{
+                cursor:default;
+            }
+            
+            #buttons > button{
+                margin:5px;
             }
 		</style>
         <script>
+            function get_args() {
+                var prmstr = window.location.search.substr(1);
+                var params = {};
+                if (!prmstr || prmstr.length == 0){
+                    return params;
+                }
+                var prmarr = prmstr.split("&");
+                for ( var i = 0; i < prmarr.length; i++) {
+                    var tmparr = prmarr[i].split("=");
+                    params[tmparr[0]] = tmparr[1];
+                }
+                return params;
+            }
+
             var get_hero_portrait = function(h, hq){
                 var url = '<img src="http://cdn.dota2.com/apps/dota2/images/heroes/' + h.split(" ").join("_");
                 if (hq){
@@ -53,31 +84,144 @@
                 return url;
             }
             
-            var calc =  function(){
+            var radiant_heroes = [];
+            var dire_heroes = [];
+            var radiant_suggestions = [];
+            var dire_suggestions = [];
+            var loading = false;
+            
+            var set_loading = function(load){
+                loading = load;
+                if (load){
+                    $("#loader").show();
+                } else {
+                    $("#loader").hide();
+                }
+            }
+            
+            var draw_picks = function(){
+                $("#r_heroes").html('');
+                $("#d_heroes").html('');
+                
+                for (h in radiant_heroes){
+                    var hero = radiant_heroes[h];
+                    $("#r_heroes").append('<div id="' + hero + '" title="' + hero + '" class="pick">' + get_hero_portrait(hero, true) + '</div>');
+                }
+                for (h in dire_heroes){
+                    var hero = dire_heroes[h];
+                    $("#d_heroes").append('<div id="' + hero + '" title="' + hero + '" class="pick">' + get_hero_portrait(hero, true) + '</div>');
+                }
+                
                 var d_slots = 5-$("#d_heroes").children().length;
                 var r_slots = 5-$("#r_heroes").children().length;
                 for (var i=0; i<d_slots; i++){
-                    $("#d_heroes").append('<div class="pick"></div>');
+                    $("#d_heroes").append('<div class="pick nopick"></div>');
                 }
                 for (var i=0; i<r_slots; i++){
-                    $("#r_heroes").append('<div class="pick"></div>');
+                    $("#r_heroes").append('<div class="pick nopick"></div>');
                 }
                 
-                var r_heroes = '';
-                $("#r_heroes").children().each(function(){
-                    if (this.id.length > 0){
-                        r_heroes += this.id + ',';
+                $("#r_heroes > div.pick").click(function(){
+                    if (loading){
+                        return;
+                    }
+                    if ($(this)[0].id.length > 0){
+                        if (radiant_heroes.indexOf($(this)[0].id) > -1){
+                            radiant_heroes.splice(radiant_heroes.indexOf($(this)[0].id), 1);
+                        }
+                        calc();
                     }
                 });
-                r_heroes += $("#r_hero_input").val().toLowerCase();
+                $("#d_heroes > div.pick").click(function(){
+                    if (loading){
+                        return;
+                    }
+                    if ($(this)[0].id.length > 0){
+                        if (dire_heroes.indexOf($(this)[0].id) > -1){
+                            dire_heroes.splice(dire_heroes.indexOf($(this)[0].id), 1);
+                        }
+                        calc();
+                    }
+                });
+            }
+            
+            var draw_suggestions = function(r_search, d_search){
+                $("#r_suggest").html('');
+                $("#d_suggest").html('');
+                var r_suggest = [];
+                if (r_search && r_search.length > 0) {
+                    for (var i=0;i<radiant_suggestions.length;i++){
+                        var hero = radiant_suggestions[i];
+                        if (hero.hero.indexOf(r_search) > -1){
+                            r_suggest.push(hero);
+                        }
+                    }
+                } else {
+                    r_suggest = radiant_suggestions;
+                }
+                r_suggest = r_suggest.sort(function(b,a){
+                    return a.score-b.score;
+                })
+                for (var i=0;i<((16 < r_suggest.length)? 16 : r_suggest.length);i++){
+                    var hero = r_suggest[i];
+                    var score = (hero.score*100).toFixed(1);
+                    var html = '<div data-hero="' + hero.hero + '" title="' + hero.hero + '" class="r_suggest">'
+                    html += get_hero_portrait(hero.hero);
+                    html += '<span>' + score + '</span>';
+                    html += '</div>';
+                    $("#r_suggest").append(html);
+                }
                 
-                var d_heroes = '';
-                $("#d_heroes").children().each(function(){
-                    if (this.id.length > 0){
-                        d_heroes += this.id + ',';
+                var d_suggest = [];
+                if (d_search && d_search.length > 0) {
+                    for (var i=0;i<dire_suggestions.length;i++){
+                        var hero = dire_suggestions[i];
+                        if (hero.hero.indexOf(d_search) > -1){
+                            d_suggest.push(hero);
+                        }
                     }
+                } else {
+                    d_suggest = dire_suggestions;
+                }
+                d_suggest = d_suggest.sort(function(b,a){
+                    return a.score-b.score;
+                })
+                for (var i=0;i<((16 < d_suggest.length)? 16 : d_suggest.length);i++){
+                    var hero = d_suggest[i];
+                    var score = (hero.score*100).toFixed(1);
+                    var html = '<div data-hero="' + hero.hero + '" title="' + hero.hero + '" class="d_suggest">'
+                    html += get_hero_portrait(hero.hero);
+                    html += '<span>' + score + '</span>';
+                    html += '</div>';
+                    $("#d_suggest").append(html);
+                }
+                
+				$("div.r_suggest").click(function(){
+                    if (loading){
+                        return;
+                    }
+                    $("#r_hero_input").val($(this).data('hero'));
+                    calc();
                 });
-                d_heroes += $("#d_hero_input").val().toLowerCase();
+                $("div.d_suggest").click(function(){
+                    if (loading){
+                        return;
+                    }
+                    $("#d_hero_input").val($(this).data('hero'));
+                    calc();
+                });
+            }
+            
+            var calc =  function(){
+                if (loading){
+                    return;
+                }
+                set_loading(true);
+                
+                draw_picks();
+                
+                radiant_heroes.push($("#r_hero_input").val().toLowerCase());
+                dire_heroes.push($("#d_hero_input").val().toLowerCase());
                 
                 $("#r_hero_input").val('');
                 $("#d_hero_input").val('');
@@ -86,78 +230,59 @@
                     dataType: "json",
                     url: "/calc",
                     data: {
-                        r_hero_input: r_heroes,
-                        d_hero_input: d_heroes
+                        r_hero_input: radiant_heroes.join(','),
+                        d_hero_input: dire_heroes.join(',')
                     }
                 }).done(function(data) {
-                    $("#r_heroes").html('');
-                    $("#d_heroes").html('');
-					$("#r_suggest").html('');
-					$("#d_suggest").html('');
-                    
-                    for (h in data.heroes.r){
-                        hero = data.heroes.r[h]
-                        $("#r_heroes").append('<div id="' + hero + '" title="' + hero + '" class="pick">' + get_hero_portrait(hero, true) + '</div>');
-                    }
-                    for (h in data.heroes.d){
-                        hero = data.heroes.d[h]
-                        $("#d_heroes").append('<div id="' + hero + '" title="' + hero + '" class="pick">' + get_hero_portrait(hero, true) + '</div>');
-                    }
-                    var d_slots = 5-$("#d_heroes").children().length;
-                    var r_slots = 5-$("#r_heroes").children().length;
-                    for (var i=0; i<d_slots; i++){
-                        $("#d_heroes").append('<div class="pick"></div>');
-                    }
-                    for (var i=0; i<r_slots; i++){
-                        $("#r_heroes").append('<div class="pick"></div>');
-                    }
-                    
-                    $("div.pick").click(function(){
-                        if ($(this)[0].id.length > 0){
-                            $(this).remove();
-                            calc();
-                        }
-                    });
+                    radiant_heroes = data.heroes.r;
+                    dire_heroes = data.heroes.d;
+                    draw_picks();
                     
                     $("#r_score").html((data.prediction[0]*100).toFixed(1) + "%")
                     $("#d_score").html((data.prediction[1]*100).toFixed(1) + "%")
                     
-                    r_suggest = Object.keys(data.heroes.r_next).sort(function(b,a){
-                        return data.heroes.r_next[a]-data.heroes.r_next[b]
-                    })
-                    for (var i=0;i<((16 < r_suggest.length)? 16 : r_suggest.length);i++){
-                        hero = r_suggest[i];
-						score = (data.heroes.r_next[hero]*100).toFixed(1);
-						html = '<div data-hero="' + hero + '" title="' + hero + '" class="r_suggest">'
-						html += get_hero_portrait(hero);
-						html += '<span>' + score + '</span>';
-						html += '</div>';
-						$("#r_suggest").append(html);
-                    }
-					d_suggest = Object.keys(data.heroes.d_next).sort(function(b,a){
-                        return data.heroes.d_next[a]-data.heroes.d_next[b]
-                    })
-                    for (var i=0;i<((16 < d_suggest.length)? 16 : d_suggest.length);i++){
-                        hero = d_suggest[i];
-						score = (data.heroes.d_next[hero]*100).toFixed(1);
-						html = '<div data-hero="' + hero + '" title="' + hero + '" class="d_suggest">'
-						html += get_hero_portrait(hero);
-						html += '<span>' + score + '</span>';
-						html += '</div>';
-						$("#d_suggest").append(html);
-                    }
-					$("div.r_suggest").click(function(){
-                        $("#r_hero_input").val($(this).data('hero'));
-                        calc();
-                    });
-                    $("div.d_suggest").click(function(){
-                        $("#d_hero_input").val($(this).data('hero'));
-                        calc();
-                    });
+                    radiant_suggestions = data.heroes.r_next;
+                    dire_suggestions = data.heroes.d_next;
+                    draw_suggestions();
+                }).always(function() {
+                    set_loading(false);
                 });
             };
             
+            var reset = function(){
+                if (loading){
+                    return;
+                }
+                radiant_heroes = [];
+                dire_heroes = [];
+                calc();
+            }
+            
+            var swap = function(){
+                if (loading){
+                    return;
+                }
+                var r_heroes = radiant_heroes;
+                radiant_heroes = dire_heroes;
+                dire_heroes = r_heroes;
+                calc();
+            }
+            
+            var share = function(){
+                var url = 'http://' + window.location.hostname + "/";
+                url += "?radiant_heroes=" + radiant_heroes.join(",");
+                url += "&dire_heroes=" + dire_heroes.join(",");
+                window.prompt("Copy URL:", url);
+            }
+            
             $(function() {
+                var args = get_args();
+                if (args.radiant_heroes) {
+                    radiant_heroes = args.radiant_heroes.split(",");
+                }
+                if (args.dire_heroes) {
+                    dire_heroes = args.dire_heroes.split(",");
+                }
                 calc();
                 $(":input").keyup(function (e) {
                     if (e.keyCode == 13) {
@@ -168,8 +293,10 @@
                 var heroes = [
                     {% for hero in heroes %}'{{hero}}',{% endfor %}
                 ];
-                $("#r_hero_input").autocomplete({source: heroes});
-                $("#d_hero_input").autocomplete({source: heroes});
+                $(":input").autocomplete({source: heroes});
+                $(":input").on('input', function(){
+                    draw_suggestions($("#r_hero_input").val(), $("#d_hero_input").val());
+                });
             });
         </script>
     </head>
@@ -195,6 +322,16 @@
                         <div id="result" style="width:90%; max-width:250px; margin:auto; margin-top:100px; font-size:2em">
                             <span id="r_score" style="color:green"></span> vs <span id="d_score" style="color:red"></span>
                         </div>
+                        <div style="margin-top:50px">
+                            <div id="buttons" style="display:flex; justify-content:center">
+                                <button onclick="reset()">Reset</button>
+                                <button onclick="swap()">Swap</button>
+                                <button onclick="share()">Share</button>
+                            </div>
+                            <div id="loader" style="margin:auto; margin-top:60px; width:60px; display:none">
+                                <img width="100%" src="/static/images/loader.gif">
+                            </div>
+                        </div>
                     </div>
                     <div id="d_heroes" style="margin:10px; flex:1">
                     </div>
@@ -203,7 +340,6 @@
                 </div>
             </div>
             <div style="margin:10px; display:flex; justify-content:space-between">
-                
                 
             </div>
         </div>
