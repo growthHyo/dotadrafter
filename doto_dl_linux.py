@@ -21,7 +21,7 @@ req = api.matches_get(n_id=next_id)
 while True:
     i += 1
     try:
-        if i%250==1:
+        if i%100==1:
             print('Errors: ', api.errors)
             print('Matches: ', matches_parsed)
             api.errors = 0
@@ -39,12 +39,14 @@ while True:
             print("")
             drafter.save()
             
-        if i%1000==0:
+        if i%500==0:
             print("Accuracy:", drafter.test_accuracy())
     
         matches = api.matches_result(req)
         
-        next_id = matches[-1]['match_seq_num'] + 1 #+ ((0 * len(matches)) // 100)
+        next_id = matches[-1]['match_seq_num'] + 1
+        if latest_start_time and dt.datetime.now() - latest_start_time > dt.timedelta(hours=3):
+             next_id += 1500
         req = api.matches_get(n_id=next_id)
         
         matches_bulk = list()

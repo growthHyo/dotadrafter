@@ -33,7 +33,7 @@ class Dota_API():
             url = 'http://www.dotabuff.com/matches/' + str(n_id)
         elif req_type == 5:
             url = 'http://dotamax.com/match/detail/' + str(n_id)
-        return dict(req=self.session.get(url, timeout=4, headers=self.headers), req_type=req_type, n_id=n_id, url=url)
+        return dict(req=self.session.get(url, timeout=7, headers=self.headers), req_type=req_type, n_id=n_id, url=url)
 
     def matches_result(self, request):
         req = request['req']
@@ -41,10 +41,12 @@ class Dota_API():
         try:
             res = req.result()
         except (requests.ConnectionError, requests.Timeout, socket.timeout):
+            #print(time.strftime("%H:%M:%S"), request['url'])
             #print("Error:", sys.exc_info()[0])
-            return self.retry_request(request, 1)
-        #print(res.status_code)
+            return self.retry_request(request, 0.5)
         if (res.status_code != 200):
+            #print(time.strftime("%H:%M:%S"), request['url'])
+            #print(res.status_code)
             if (request['req_type']==4 and res.status_code == 429):
                 print(res)
                 self.errors += 1
