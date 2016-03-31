@@ -36,7 +36,11 @@ hero_translations = {
     'timber saw' : 'shredder',
     'clockwork' : 'rattletrap',
     'zeus' : 'zuus',
-    'io' : 'wisp'
+    'io' : 'wisp',
+    'outworld devourer' : 'obsidian destroyer',
+    'windrunner' : 'windranger',
+    'necrophos' : 'necrolyte',
+    'wraith king' : 'skeleton king'
 }
     
 # Parameters
