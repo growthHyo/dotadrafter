@@ -172,6 +172,7 @@
                 if (!prmstr || prmstr.length == 0){
                     return params;
                 }
+                prmstr = decodeURI(prmstr);
                 var prmarr = prmstr.split("&");
                 for ( var i = 0; i < prmarr.length; i++) {
                     var tmparr = prmarr[i].split("=");
@@ -388,7 +389,7 @@
                 var url = 'http://' + window.location.hostname + "/";
                 url += "?radiant_heroes=" + radiant_heroes.join(",");
                 url += "&dire_heroes=" + dire_heroes.join(",");
-                window.prompt("Copy URL:", url);
+                window.prompt("Copy URL:", encodeURI(url));
             }
             
             $(function() {
