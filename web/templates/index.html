@@ -1,12 +1,14 @@
 <!doctype html>
-<html>
+<html lang="en">
     <head>
-        <title>DOTA Drafter</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="DOTA2 Captains Mode is a draft analysis tool that estimates the probability both teams have of winning given the current picks. It also recommends heroes that would increase the change of winning.">
+        <title>DOTA2 CM</title>
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
         <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
         <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
         <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
-		    <style>
+        <style>
             @font-face {
                 font-family: nevis;
                 src: url("/static/fonts/nevis.ttf");
@@ -33,7 +35,7 @@
                 font-size:32px;
                 display:block;
                 margin:auto;
-                width:250px;
+                width:200px;
                 color:white;
                 padding-top:10px;
             }
@@ -55,10 +57,7 @@
             #sub_main {
                 display:flex;
                 justify-content:space-between;
-            }
-            
-            #sub_main_middle {
-                flex: 2;
+                margin-top:15px;
             }
             
             .ui-autocomplete {
@@ -67,6 +66,8 @@
                 overflow-x: hidden;
             }
             
+            .r_suggest > img,
+            .d_suggest > img,
             div.pick > img {
                 width:100%;
             }
@@ -83,7 +84,8 @@
             #r_heroes,
             #d_heroes {
                 flex:1;
-                margin:10px;
+                margin-left:10px;
+                margin-right:10px;
             }
             
             #sub_main_middle {
@@ -101,7 +103,6 @@
                 flex-wrap:wrap;
                 align-items:flex-start;
                 align-self:flex-start;
-                margin-top:15px;
             }
             
             .r_suggest,
@@ -110,7 +111,7 @@
                 border:1px solid;
                 border-color:#CCCCCC;
                 padding:3px;
-                width:60px;
+                max-width:60px;
                 cursor:pointer;
                 cursor:hand;
                 border-radius:2px;
@@ -133,13 +134,14 @@
                 background-color:#D0D0D0;
                 margin:10px;
                 width:135px;
-                height:76px;
+                height:auto;
                 cursor:pointer;
                 cursor:hand;
             }
             
             div.nopick{
                 cursor:default;
+                padding-bottom:51%;
             }
             
             #result {
@@ -164,7 +166,38 @@
                 width: 90%;
                 max-width: 260px;
             }
-		    </style>
+            
+            @media (max-width: 800px) {
+                #background {
+                    padding: 2px;
+                    width: 100%;
+                }
+                
+                .r_suggest span,
+                .d_suggest span{
+                    padding:0;
+                }
+                
+                div.pick{
+                    width:auto;
+                    margin:5px;
+                }
+                
+                #r_heroes,
+                #d_heroes{
+                    margin:0;
+                    flex:2;
+                }
+                
+                #sub_main_middle{
+                    flex:1;
+                }
+                
+                #result{
+                    margin-top:0;
+                }
+            }
+        </style>
         <script>
             function get_args() {
                 var prmstr = window.location.search.substr(1);
@@ -392,6 +425,13 @@
                 window.prompt("Copy URL:", encodeURI(url));
             }
             
+            var about = function(){
+                $("#about_dialog").dialog({
+                    width: "80%",
+                    maxWidth: 650
+                });
+            }
+            
             $(function() {
                 $("button").button();
                 var args = get_args();
@@ -428,7 +468,7 @@
     </head>
     <body>
         <div id="banner">
-            <h2>DOTA Drafter</h2>
+            <h2>DOTA2 CM</h2>
         </div>
         <div id="background">
             <div id="main" style="">
@@ -455,6 +495,7 @@
                             <button onclick="reset()">Reset</button>
                             <button onclick="swap()">Swap</button>
                             <button onclick="share()">Share</button>
+                            <button onclick="about()">About</button>
                         </div>
                         <div id="loader" style="margin:auto; margin-top:60px; width:40px; display:none">
                             <img width="100%" src="/static/images/loader.gif">
@@ -466,6 +507,24 @@
                     </div>
                 </div>
             </div>
+        </div>
+        <div id="about_dialog" style="display:none; width:500px">
+          <h3>About</h3>
+          <p>
+            DOTA2 Captains Mode (or Crystal Maiden) is a draft analysis tool that estimates the probability both teams
+            have of winning given the current picks. It also recommends heroes that would increase the change of winning.
+            It currently correctly predicts around 63% of ranked very high skill matches.
+          </p>
+          <h3>How it works</h3>
+          <p>
+            The tool is an artificial nueral network (artifical intelligence) trained in real time on the match results
+            of very high skill ranked matches. If you're not familiar with artificial intelligence, it effectively
+            learns how individual, pairs and triads of heroes effect the chance of winning for both the teams.
+          </p>
+          <h3>Contact</h3>
+          <p>
+            Feel free to contact me by <a href="mailto:alex_1-2-3@hotmail.com">Email</a>
+          </p>
         </div>
     </body>
 </html>

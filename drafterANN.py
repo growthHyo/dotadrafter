@@ -38,13 +38,13 @@ hero_translations = {
     'zeus' : 'zuus',
     'io' : 'wisp',
     'outworld devourer' : 'obsidian destroyer',
-    'windrunner' : 'windranger',
+    'windranger' : 'windrunner',
     'necrophos' : 'necrolyte',
     'wraith king' : 'skeleton king'
 }
     
 # Parameters
-learning_rate = 0.00001
+learning_rate = 0.000001
 epoch_size = 3000
 max_heroes = 120
 

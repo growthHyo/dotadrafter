@@ -2,6 +2,9 @@ import datetime as dt
 import time
 from drafterANN import *
 from dota_api import Dota_API
+import sys
+
+sys.setrecursionlimit(2000)
 
 drafter = DotoAnn()
 api = Dota_API()
@@ -46,7 +49,7 @@ while True:
         
         next_id = matches[-1]['match_seq_num'] + 1
         if latest_start_time and dt.datetime.now() - latest_start_time > dt.timedelta(hours=3):
-             next_id += 1500
+             next_id += 3000
         req = api.matches_get(n_id=next_id)
         
         matches_bulk = list()

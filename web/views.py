@@ -1,4 +1,4 @@
-from flask import render_template, request
+from flask import render_template, request, send_from_directory
 from web import app, drafter
 import json
 
@@ -13,3 +13,7 @@ def calc():
     d_heroes = request.args['d_hero_input'].split(',')
     return json.dumps(drafter.queryDraft(r_heroes, d_heroes))
     
+@app.route('/robots.txt')
+@app.route('/sitemap.txt')
+def static_from_root():
+    return send_from_directory(app.static_folder, request.path[1:])
