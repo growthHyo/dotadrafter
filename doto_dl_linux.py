@@ -49,7 +49,7 @@ while True:
         
         next_id = matches[-1]['match_seq_num'] + 1
         if latest_start_time and dt.datetime.now() - latest_start_time > dt.timedelta(hours=3):
-             next_id += 3000
+             next_id += 5000
         req = api.matches_get(n_id=next_id)
         
         matches_bulk = list()
