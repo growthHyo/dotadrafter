@@ -34,7 +34,7 @@ hero_translations = {
     'shadow fiend' : 'nevermore',
     'natures prophet' : 'furion',
     'timber saw' : 'shredder',
-    'clockwork' : 'rattletrap',
+    'clockwerk' : 'rattletrap',
     'zeus' : 'zuus',
     'io' : 'wisp',
     'outworld devourer' : 'obsidian destroyer',
@@ -42,6 +42,8 @@ hero_translations = {
     'necrophos' : 'necrolyte',
     'wraith king' : 'skeleton king'
 }
+
+mmr_scale = np.load('data/mmr_scale.npy')
     
 # Parameters
 learning_rate = 0.000001
@@ -65,7 +67,7 @@ def multilayer_perceptron(_X, _weights, _biases, _layer_opac):
     layer_1 = tf.nn.dropout(layer_1, _layer_opac)
     layer_2 = tf.nn.relu(tf.add(tf.matmul(layer_1, _weights['s2']), _biases['b2']))
     layer_2 = tf.nn.dropout(layer_2, _layer_opac)
-    return tf.matmul(layer_2, _weights['s3']) + _biases['b3']
+    return tf.add(tf.matmul(layer_2, _weights['s3']), _biases['b3'])
 
 # Weight & bias
 weights = {
@@ -89,6 +91,14 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 init = tf.initialize_all_variables()
 saver = tf.train.Saver()
 
+def softmax(w, scale=1):
+    w = np.array(w)
+    maxes = np.amax(w, axis=1)
+    maxes = maxes.reshape(maxes.shape[0], 1)
+    e = np.exp(w - maxes)
+    dist = e / np.sum(e, axis=1, keepdims=True) * scale
+    return dist
+
 sess = tf.Session()
 
 class DotoAnn:
@@ -107,42 +117,43 @@ class DotoAnn:
     def reload(self):
         saver.restore(sess, weights_path)
         
-    def run(self, inp):
-        return sess.run(tf.nn.softmax(pred), feed_dict={x: inp, layer_opac: 1})
+    def run(self, inp, mmr=4000):
+        mmr_offset = mmr_scale * (mmr - 4000)
+        r_offset = inp.dot(np.vstack((mmr_offset, np.zeros((max_heroes, 1))))) + 1
+        d_offset = inp.dot(np.vstack((np.zeros((max_heroes, 1)), mmr_offset))) + 1
+        offset = np.hstack((r_offset, d_offset))
+        out = sess.run(tf.nn.softmax(pred), feed_dict={x: inp, layer_opac: 1})
+        out = np.multiply(out, offset)
+        return softmax(out*2.1)
+    
+    def get_hero_id(self, hero, r_heroes=[], d_heroes=[]):
+        if hero and len(hero) > 0:
+            for id,name in heroes.items():
+                if hero in name:
+                    if id not in r_heroes and id not in d_heroes:
+                        return id
+            for name in hero_translations:
+                if hero in name:
+                    found = self.get_hero_id(hero_translations[name])
+                    if found:
+                        return found
+        return None
         
-    def queryDraft(self, r_heroes_str, d_heroes_str):
+    def queryDraft(self, r_heroes_str, d_heroes_str, mmr=4000):
         r_heroes = []
         d_heroes = []
 
         print_actual_winrate = False
 
         for hero in r_heroes_str:
-            if len(hero) > 0:
-                found = False
-                for id,name in heroes.items():
-                    if hero in name:
-                        if id not in r_heroes and id not in d_heroes:
-                            r_heroes.append(id)
-                            found = True
-                            break
-                if not found:
-                    for name in hero_translations:
-                        if hero in name:
-                            r_heroes_str.append(hero_translations[name])
+            id = self.get_hero_id(hero)
+            if id:
+                r_heroes.append(id)
                     
         for hero in d_heroes_str:
-            if len(hero) > 0:
-                found = False
-                for id,name in heroes.items():
-                    if hero in name:
-                        if id not in r_heroes and id not in d_heroes:
-                            d_heroes.append(id)
-                            found = True
-                            break
-                if not found:
-                    for name in hero_translations:
-                        if hero in name:
-                            d_heroes_str.append(hero_translations[name])
+            id = self.get_hero_id(hero)
+            if id:
+                d_heroes.append(id)
                     
         #hero_win_rates = dict()
         #for h in heroes:
@@ -168,7 +179,7 @@ class DotoAnn:
             if h not in r_heroes and h not in d_heroes:
                 inp[h+max_heroes][h + max_heroes] = 1
                 
-        out = self.run(inp)
+        out = self.run(inp, mmr)
         current_ch = out[n_input]
         
         picks = []

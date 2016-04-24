@@ -7,6 +7,8 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
         <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
         <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+        <script src="/static/js/jquery-ui-slider-pips.js"></script>
+        <link rel="stylesheet" href="/static/css/jquery-ui-slider-pips.css">
         <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
         <style>
             @font-face {
@@ -161,10 +163,16 @@
                 margin-top:30px;
             }
             
-            #buttons > button{
+            #buttons > button,
+            #mmr{
                 margin: 5px;
                 width: 90%;
                 max-width: 260px;
+            }
+            
+            #buttons > label,
+            #mmr {
+                margin-top: 15px;
             }
             
             @media (max-width: 800px) {
@@ -378,7 +386,8 @@
                     url: "/calc",
                     data: {
                         r_hero_input: radiant_heroes.join(','),
-                        d_hero_input: dire_heroes.join(',')
+                        d_hero_input: dire_heroes.join(','),
+                        mmr: $("#mmr").slider("value")
                     }
                 }).done(function(data) {
                     radiant_heroes = data.heroes.r;
@@ -422,6 +431,7 @@
                 var url = 'http://' + window.location.hostname + "/";
                 url += "?radiant_heroes=" + radiant_heroes.join(",");
                 url += "&dire_heroes=" + dire_heroes.join(",");
+                url += "&mmr=" + $("#mmr").slider("value");
                 window.prompt("Copy URL:", encodeURI(url));
             }
             
@@ -433,6 +443,16 @@
             }
             
             $(function() {
+                $("#mmr").slider({
+                    min: 1000,
+                    max: 8000,
+                    value: 4000,
+                    change: function( event, ui ) {calc();}
+                }).slider("pips", {
+                    rest: "label",
+                    labels: ["2k", "3k", "4k", "5k", "6k", "7k"],
+                    step: 1000
+                }).slider("float");
                 $("button").button();
                 var args = get_args();
                 if (args.radiant_heroes) {
@@ -440,6 +460,9 @@
                 }
                 if (args.dire_heroes) {
                     dire_heroes = args.dire_heroes.split(",");
+                }
+                if (args.mmr) {
+                    $("#mmr").slider("value", args.mmr);
                 }
                 calc();
                 $(":input").keyup(function (e) {
@@ -496,6 +519,8 @@
                             <button onclick="swap()">Swap</button>
                             <button onclick="share()">Share</button>
                             <button onclick="about()">About</button>
+                            <label>MMR:</label>
+                            <div id="mmr"></div>
                         </div>
                         <div id="loader" style="margin:auto; margin-top:60px; width:40px; display:none">
                             <img width="100%" src="/static/images/loader.gif">
@@ -512,7 +537,7 @@
           <h3>About</h3>
           <p>
             DOTA 2 Captains Mode (or Crystal Maiden) is a hero picker tool that estimates the probability both teams
-            have of winning given the current draft. It recommends heroes that would increase the change of winning.
+            have of winning given the current draft. It recommends heroes that would increase the chance of winning.
             It currently correctly predicts around 63% of ranked very high skill matches.
           </p>
           <h3>How it works</h3>

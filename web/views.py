@@ -11,7 +11,8 @@ def index():
 def calc():
     r_heroes = request.args['r_hero_input'].split(',')
     d_heroes = request.args['d_hero_input'].split(',')
-    return json.dumps(drafter.queryDraft(r_heroes, d_heroes))
+    mmr = int(request.args['mmr']) if 'mmr' in request.args else 4000
+    return json.dumps(drafter.queryDraft(r_heroes, d_heroes, mmr))
     
 @app.route('/robots.txt')
 @app.route('/sitemap.txt')
