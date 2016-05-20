@@ -44,10 +44,11 @@ hero_translations = {
 }
 
 mmr_scale = np.load('data/mmr_scale.npy')
+mmr_default = 4000
     
 # Parameters
-learning_rate = 0.000001
-epoch_size = 3000
+learning_rate = 0.00005
+epoch_size = 1500
 max_heroes = 120
 
 # Network Parameters
@@ -89,7 +90,8 @@ optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
 correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
 init = tf.initialize_all_variables()
-saver = tf.train.Saver()
+saver2 = tf.train.Saver(list(weights.values()) + list(biases.values()))
+saver = tf.train.Saver(tf.all_variables())
 
 def softmax(w, scale=1):
     w = np.array(w)
@@ -106,6 +108,7 @@ class DotoAnn:
         self.heroes = heroes
         self.hero_translations = hero_translations
         if os.path.isfile(weights_path):
+            sess.run(init)
             saver.restore(sess, weights_path)
         else:
             print("Weights file not found")
@@ -117,8 +120,8 @@ class DotoAnn:
     def reload(self):
         saver.restore(sess, weights_path)
         
-    def run(self, inp, mmr=4000):
-        mmr_offset = mmr_scale * (mmr - 4000)
+    def run(self, inp, mmr=mmr_default):
+        mmr_offset = mmr_scale * (mmr - mmr_default)
         r_offset = inp.dot(np.vstack((mmr_offset, np.zeros((max_heroes, 1))))) + 1
         d_offset = inp.dot(np.vstack((np.zeros((max_heroes, 1)), mmr_offset))) + 1
         offset = np.hstack((r_offset, d_offset))
@@ -139,19 +142,19 @@ class DotoAnn:
                         return found
         return None
         
-    def queryDraft(self, r_heroes_str, d_heroes_str, mmr=4000):
+    def queryDraft(self, r_heroes_str, d_heroes_str, mmr=mmr_default):
         r_heroes = []
         d_heroes = []
 
         print_actual_winrate = False
 
         for hero in r_heroes_str:
-            id = self.get_hero_id(hero)
+            id = self.get_hero_id(hero, r_heroes, d_heroes)
             if id:
                 r_heroes.append(id)
                     
         for hero in d_heroes_str:
-            id = self.get_hero_id(hero)
+            id = self.get_hero_id(hero, r_heroes, d_heroes)
             if id:
                 d_heroes.append(id)
                     
@@ -252,7 +255,7 @@ class DotoAnn:
             xs = np.zeros((epoch_size, n_input), np.int)
             ys = np.zeros((epoch_size, n_out), np.int)
             i=0
-            #for m in Match.select().where(Match.seq_num > 1770445525).order_by(fn.Random()).limit(epoch_size):
+            #for m in Match.select().order_by(fn.Random()).limit(epoch_size):
             for m in Match.select().order_by(Match.seq_num.desc()).limit(epoch_size):
                 for h in m.radiant_heroes.split(","):
                     xs[i][int(h)] = 1

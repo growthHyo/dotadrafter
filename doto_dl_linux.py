@@ -32,17 +32,17 @@ while True:
             print(time.strftime("%H:%M:%S") + ": " + str(latest_start_time))
             
             inp = np.zeros((1, n_input), np.int)
-            inp[0][91] = 1
-            print("Wisp: " + str(drafter.run(inp)))
+            inp[0][2] = 1
+            print("Axe: " + str(drafter.run(inp)))
             
             inp = np.zeros((1, n_input), np.int)
-            inp[0][91 + max_heroes] = 1
-            print("vs Wisp: " + str(drafter.run(inp)))
+            inp[0][2 + max_heroes] = 1
+            print("vs Axe: " + str(drafter.run(inp)))
             
             print("")
             drafter.save()
             
-        if i%500==0:
+        if i%500==1:
             print("Accuracy:", drafter.test_accuracy())
     
         matches = api.matches_result(req)

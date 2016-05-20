@@ -7,6 +7,7 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
         <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
         <script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+        <script src="/static/js/jquery.ui.touch-punch.min.js"></script>
         <script src="/static/js/jquery-ui-slider-pips.js"></script>
         <link rel="stylesheet" href="/static/css/jquery-ui-slider-pips.css">
         <link rel="shortcut icon" type="image/x-icon" href="/static/favicon.ico"/>
@@ -444,15 +445,16 @@
             
             $(function() {
                 $("#mmr").slider({
-                    min: 1000,
+                    min: 2000,
                     max: 8000,
                     value: 4000,
                     change: function( event, ui ) {calc();}
                 }).slider("pips", {
                     rest: "label",
-                    labels: ["2k", "3k", "4k", "5k", "6k", "7k"],
-                    step: 1000
+                    labels: ["4k", "6k", "8k"],
+                    step: 2000
                 }).slider("float");
+                $("#mmr > .ui-slider-pip:first > .ui-slider-label").html("2k");
                 $("button").button();
                 var args = get_args();
                 if (args.radiant_heroes) {
@@ -542,7 +544,7 @@
           </p>
           <h3>How it works</h3>
           <p>
-            The tool is an artificial nueral network (artifical intelligence) trained in real time on the match results
+            The tool is an artificial neural network (artifical intelligence) trained in real time on the match results
             of very high skill ranked matches. If you're not familiar with artificial intelligence, it effectively
             learns how individual, pairs and triads of heroes effect the chance of winning for both the teams.
           </p>
