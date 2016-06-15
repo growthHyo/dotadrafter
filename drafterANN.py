@@ -47,7 +47,7 @@ mmr_scale = np.load('data/mmr_scale.npy')
 mmr_default = 4000
     
 # Parameters
-learning_rate = 0.00005
+learning_rate = 0.00006
 epoch_size = 1500
 max_heroes = 120
 

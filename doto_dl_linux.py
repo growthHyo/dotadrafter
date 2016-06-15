@@ -9,7 +9,7 @@ sys.setrecursionlimit(2000)
 drafter = DotoAnn()
 api = Dota_API()
 
-next_id = '1808518935'
+next_id = '2107951070'
 latest_start_time = None
 
 for m in Match.select().order_by(Match.seq_num.desc()).limit(1):

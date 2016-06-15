@@ -69,7 +69,7 @@ class Dota_API():
 
 
     def retry_request(self, request, sleep=None):
-        #print(request['url'])
+        #print('Error', request['url'])
         self.errors += 1
         #self.api_key_num = abs(self.api_key_num - 1)
         #self.api_key = self.api_keys[self.api_key_num]

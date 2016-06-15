@@ -57,9 +57,7 @@
                 margin:auto;
             }
             
-            #sub_main {
-                display:flex;
-                justify-content:space-between;
+            #picks {
                 margin-top:15px;
             }
             
@@ -73,10 +71,13 @@
             .d_suggest > img,
             div.pick > img {
                 width:100%;
+                display:block;
             }
             
             #search_inputs {
+                margin-top: 10px;
                 display:flex;
+                align-items:flex-end;
             }
             
             #search_inputs > div {
@@ -86,13 +87,9 @@
             
             #r_heroes,
             #d_heroes {
-                flex:1;
                 margin-left:10px;
                 margin-right:10px;
-            }
-            
-            #sub_main_middle {
-                flex: 2;
+                display:flex;
             }
             
             #search_inputs input {
@@ -102,19 +99,22 @@
             #r_suggest,
             #d_suggest{
                 display:flex;
-                flex: 1;
+                flex: 2;
                 flex-wrap:wrap;
                 align-items:flex-start;
                 align-self:flex-start;
+            }
+            
+            #r_suggest {
+                justify-content:flex-end;
             }
             
             .r_suggest,
             .d_suggest{
                 margin:2px;
                 border:1px solid;
-                border-color:#CCCCCC;
                 padding:3px;
-                max-width:60px;
+                width:60px;
                 cursor:pointer;
                 cursor:hand;
                 border-radius:2px;
@@ -122,12 +122,22 @@
                 color:black;
             }
             
+            #r_heroes > div.pick,
+            .r_suggest {
+                border-color:green;
+            }
+            
+            #d_heroes > div.pick,
+            .d_suggest {
+                border-color:red;
+            }
+            
             .r_suggest > span,
             .d_suggest > span{
                 display:block;
                 width:100%;
                 padding-left: 12px;
-                padding-top:2px;
+                margin-top:5px;
             }
             
             div.pick{
@@ -136,32 +146,29 @@
                 border-radius:5px;
                 background-color:#D0D0D0;
                 margin:10px;
-                width:135px;
-                height:auto;
                 cursor:pointer;
                 cursor:hand;
             }
             
             div.nopick{
                 cursor:default;
-                padding-bottom:51%;
             }
             
             #result {
                 width:100%;
                 max-width:260px;
                 margin:auto;
-                margin-top:100px;
                 font-size:30px;
                 text-align: center;
             }
             
             #buttons {
                 display: flex;
-                justify-content: center;
                 flex-direction: column;
                 align-items: center;
-                margin-top:30px;
+                flex: 1;
+                padding-left: 15px;
+                padding-right: 15px;
             }
             
             #buttons > button,
@@ -176,6 +183,11 @@
                 margin-top: 15px;
             }
             
+            #controls {
+                display:flex;
+                margin-top: 10px;
+            }
+            
             @media (max-width: 800px) {
                 #background {
                     padding: 2px;
@@ -188,7 +200,6 @@
                 }
                 
                 div.pick{
-                    width:auto;
                     margin:5px;
                 }
                 
@@ -198,12 +209,9 @@
                     flex:2;
                 }
                 
-                #sub_main_middle{
-                    flex:1;
-                }
-                
-                #result{
-                    margin-top:0;
+                .r_suggest,
+                .d_suggest {
+                    width:40px;
                 }
             }
         </style>
@@ -265,10 +273,10 @@
                 var d_slots = 5-$("#d_heroes").children().length;
                 var r_slots = 5-$("#r_heroes").children().length;
                 for (var i=0; i<d_slots; i++){
-                    $("#d_heroes").append('<div class="pick nopick"></div>');
+                    $("#d_heroes").append('<div class="pick nopick"><img src="/static/images/pick_template.png"></div>');
                 }
                 for (var i=0; i<r_slots; i++){
-                    $("#r_heroes").append('<div class="pick nopick"></div>');
+                    $("#r_heroes").append('<div class="pick nopick"><img src="/static/images/pick_template.png"></div>');
                 }
                 
                 $("#r_heroes > div.pick").click(function(){
@@ -312,7 +320,7 @@
                 r_suggest = r_suggest.sort(function(b,a){
                     return a.score-b.score;
                 })
-                for (var i=0;i<((16 < r_suggest.length)? 16 : r_suggest.length);i++){
+                for (var i=0;i<((24 < r_suggest.length)? 24 : r_suggest.length);i++){
                     var hero = r_suggest[i];
                     var score = ((hero.score-prediction[0])*100).toFixed(1);
                     if (score > 0) {
@@ -339,7 +347,7 @@
                 d_suggest = d_suggest.sort(function(b,a){
                     return a.score-b.score;
                 })
-                for (var i=0;i<((16 < d_suggest.length)? 16 : d_suggest.length);i++){
+                for (var i=0;i<((24 < d_suggest.length)? 24 : d_suggest.length);i++){
                     var hero = d_suggest[i];
                     var score = ((hero.score-prediction[1])*100).toFixed(1);
                     if (score > 0) {
@@ -386,8 +394,8 @@
                     dataType: "json",
                     url: "/calc",
                     data: {
-                        r_hero_input: radiant_heroes.join(','),
-                        d_hero_input: dire_heroes.join(','),
+                        r_hero_input: radiant_heroes.slice(0,5).join(','),
+                        d_hero_input: dire_heroes.slice(0,5).join(','),
                         mmr: $("#mmr").slider("value")
                     }
                 }).done(function(data) {
@@ -496,39 +504,41 @@
             <h2>DOTA2 CM</h2>
         </div>
         <div id="background">
-            <div id="main" style="">
-                <div id="search_inputs">
-                    <div>
-                        <label>Radiant:</label><br>
-                        <input id="r_hero_input">
-                    </div>
-                    <div>
-                        <label>Dire:</label><br>
-                        <input id="d_hero_input">
-                    </div>
-                </div>
-                <div id="sub_main">
-                    <div id="r_suggest">
-                    </div>
+            <div id="main">
+                <div id="picks">
                     <div id="r_heroes">
                     </div>
-                    <div id="sub_main_middle">
-                        <div id="result">
-                            <span id="r_score" style="color:green"></span> vs <span id="d_score" style="color:red"></span>
-                        </div>
-                        <div id="buttons">
-                            <button onclick="reset()">Reset</button>
-                            <button onclick="swap()">Swap</button>
-                            <button onclick="share()">Share</button>
-                            <button onclick="about()">About</button>
-                            <label>MMR:</label>
-                            <div id="mmr"></div>
-                        </div>
-                        <div id="loader" style="margin:auto; margin-top:60px; width:40px; display:none">
+                    <div id="result">
+                         <span id="r_score" style="color:green"></span> vs <span id="d_score" style="color:red"></span>
+                    </div>
+                    <div id="d_heroes">
+                    </div>
+                </div>
+                
+                <div id="search_inputs">
+                    <div>
+                        <input id="r_hero_input">
+                    </div>
+                    <div style="height:50px;">
+                        <div id="loader" style="margin:auto; width:40px; display:none">
                             <img width="100%" src="/static/images/loader.gif">
                         </div>
                     </div>
-                    <div id="d_heroes">
+                    <div>
+                        <input id="d_hero_input">
+                    </div>
+                </div>
+                
+                <div id="controls">
+                    <div id="r_suggest">
+                    </div>
+                    <div id="buttons">
+                        <button onclick="reset()">Reset</button>
+                        <button onclick="swap()">Swap</button>
+                        <button onclick="share()">Share</button>
+                        <button onclick="about()">About</button>
+                        <label>MMR:</label>
+                        <div id="mmr"></div>
                     </div>
                     <div id="d_suggest">
                     </div>
