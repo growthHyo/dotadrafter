@@ -77,11 +77,13 @@
             #search_inputs {
                 margin-top: 10px;
                 display:flex;
-                align-items:flex-end;
+                align-items:flex-start;
+                padding-left: 30px;
+                padding-right: 30px;
             }
             
             #search_inputs > div {
-                flex: 1;
+                flex: 2;
                 margin:5px;
             }
             
@@ -320,7 +322,7 @@
                 r_suggest = r_suggest.sort(function(b,a){
                     return a.score-b.score;
                 })
-                for (var i=0;i<((24 < r_suggest.length)? 24 : r_suggest.length);i++){
+                for (var i=0;i<((25 < r_suggest.length)? 25 : r_suggest.length);i++){
                     var hero = r_suggest[i];
                     var score = ((hero.score-prediction[0])*100).toFixed(1);
                     if (score > 0) {
@@ -347,7 +349,7 @@
                 d_suggest = d_suggest.sort(function(b,a){
                     return a.score-b.score;
                 })
-                for (var i=0;i<((24 < d_suggest.length)? 24 : d_suggest.length);i++){
+                for (var i=0;i<((25 < d_suggest.length)? 25 : d_suggest.length);i++){
                     var hero = d_suggest[i];
                     var score = ((hero.score-prediction[1])*100).toFixed(1);
                     if (score > 0) {
@@ -519,7 +521,7 @@
                     <div>
                         <input id="r_hero_input">
                     </div>
-                    <div style="height:50px;">
+                    <div style="height:50px; flex:1">
                         <div id="loader" style="margin:auto; width:40px; display:none">
                             <img width="100%" src="/static/images/loader.gif">
                         </div>
