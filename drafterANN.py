@@ -47,7 +47,7 @@ mmr_scale = np.load('data/mmr_scale.npy')
 mmr_default = 4000
     
 # Parameters
-learning_rate = 0.00006
+learning_rate = 0.00003
 epoch_size = 1500
 max_heroes = 120
 
@@ -248,7 +248,7 @@ class DotoAnn:
         return resp
         
     def train(self, xs, ys):
-        sess.run(optimizer, feed_dict={x: xs, y: ys, layer_opac: 0.99})
+        sess.run(optimizer, feed_dict={x: xs, y: ys, layer_opac: 0.7})
         
     def test_accuracy(self, xs=None, ys=None):
         if xs is None:

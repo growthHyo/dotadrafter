@@ -3,6 +3,7 @@ from requests_futures.sessions import FuturesSession
 import socket
 import time
 import sys
+from requests_toolbelt.adapters import source
 
 class Dota_API():
     api_keys = ['FE70CE9FC0D6D99279498CE852587F59','2FEC67172AAC0C393EC209A225A7E51E']
@@ -14,6 +15,7 @@ class Dota_API():
     errors = 0
 
     session = FuturesSession()
+    session.mount('http://', source.SourceAddressAdapter('162.213.199.31'))
 
     def matches_get(self, req_type=1, n_id='', **kwargs):
         if (req_type < 4):
@@ -37,21 +39,11 @@ class Dota_API():
 
     def matches_result(self, request):
         req = request['req']
-        #print(request['url'])
         try:
             res = req.result()
         except (requests.ConnectionError, requests.Timeout, socket.timeout):
-            #print(time.strftime("%H:%M:%S"), request['url'])
-            #print("Error:", sys.exc_info()[0])
-            return self.retry_request(request, 0.5)
+            return self.retry_request(request)
         if (res.status_code != 200):
-            #print(time.strftime("%H:%M:%S"), request['url'])
-            #print(res.status_code)
-            if (request['req_type']==4 and res.status_code == 429):
-                print(res)
-                self.errors += 1
-                time.sleep(300)
-                return None
             return self.retry_request(request)
         if (request['req_type']==4):
             return self.parse_skill(res)
@@ -69,10 +61,8 @@ class Dota_API():
 
 
     def retry_request(self, request, sleep=None):
-        #print('Error', request['url'])
+        print(request)
         self.errors += 1
-        #self.api_key_num = abs(self.api_key_num - 1)
-        #self.api_key = self.api_keys[self.api_key_num]
         if sleep:
             time.sleep(sleep)
         else:
