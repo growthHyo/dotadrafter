@@ -18,8 +18,10 @@ for m in Match.select().order_by(Match.seq_num.desc()).limit(1):
 i = 0
 matches_parsed = 0
 
-
 req = api.matches_get(n_id=next_id)
+
+matches_bulk = list()
+batch_size = 64
 
 while True:
     i += 1
@@ -52,7 +54,6 @@ while True:
              next_id += 5000
         req = api.matches_get(n_id=next_id)
         
-        matches_bulk = list()
         reqs_dict = dict()
         matches_dict = dict()
 
@@ -77,30 +78,30 @@ while True:
                 m['radiant_heroes'] = ",".join(r_heroes)
                 m['dire_heroes'] = ",".join(d_heroes)
                 matches_bulk.append(m)
+                if len(matches_bulk) >= batch_size:
+                    #save matches to db
+                    with db.atomic():
+                        Match.insert_many(matches_bulk).execute()
+
+                    #train the network
+                    batch_xs = np.zeros((len(matches_bulk), n_input), np.int)
+                    batch_ys = np.zeros((len(matches_bulk), n_out), np.int)
+                    i2=0
+                    for m in matches_bulk:
+                        for h in m['radiant_heroes'].split(","):
+                            batch_xs[i2][int(h)] = 1
+                        for h in m['dire_heroes'].split(","):
+                            batch_xs[i2][int(h) + max_heroes] = 1
+                        batch_ys[i2][not m['radiant_win']] = 1
+                        i2+=1
+                    drafter.train(batch_xs, batch_ys)
+                    matches_bulk = list()
 
                 start_time = dt.datetime.fromtimestamp(matches[-1]['start_time'])
                 if not latest_start_time or start_time > latest_start_time:
                     latest_start_time = start_time
                 
                 matches_parsed += 1
-
-        if len(matches_bulk) > 0:
-            #save matches to db
-            with db.atomic():
-                Match.insert_many(matches_bulk).execute()
-            
-            #train the network
-            batch_xs = np.zeros((len(matches_bulk), n_input), np.int)
-            batch_ys = np.zeros((len(matches_bulk), n_out), np.int)
-            i2=0
-            for m in matches_bulk:
-                for h in m['radiant_heroes'].split(","):
-                    batch_xs[i2][int(h)] = 1
-                for h in m['dire_heroes'].split(","):
-                    batch_xs[i2][int(h) + max_heroes] = 1
-                batch_ys[i2][not m['radiant_win']] = 1
-                i2+=1
-            drafter.train(batch_xs, batch_ys)
 
     except BaseException as e:
         drafter.save()

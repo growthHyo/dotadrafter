@@ -61,7 +61,7 @@ class Dota_API():
 
 
     def retry_request(self, request, sleep=None):
-        print(request)
+        #print(request)
         self.errors += 1
         if sleep:
             time.sleep(sleep)
