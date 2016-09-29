@@ -255,8 +255,8 @@ class DotoAnn:
             xs = np.zeros((epoch_size, n_input), np.int)
             ys = np.zeros((epoch_size, n_out), np.int)
             i=0
-            #for m in Match.select().order_by(fn.Random()).limit(epoch_size):
-            for m in Match.select().order_by(Match.seq_num.desc()).limit(epoch_size):
+            for m in Match.select().order_by(fn.Random()).limit(epoch_size):
+            #for m in Match.select().order_by(Match.seq_num.desc()).limit(epoch_size):
                 for h in m.radiant_heroes.split(","):
                     xs[i][int(h)] = 1
                 for h in m.dire_heroes.split(","):

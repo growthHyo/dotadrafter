@@ -58,13 +58,22 @@ while True:
         matches_dict = dict()
 
         for match in matches:
-            if match['lobby_type'] == 7 or match['lobby_type'] == 2 or match['lobby_type'] == 5:
-                m_id = match['match_id']
-                reqs_dict[m_id] = api.matches_get(5, m_id)
-                matches_dict[m_id] = match
+            if match['human_players'] < 10:
+                #print('skip: <10 players')
+                continue
+            if not (match['lobby_type'] == 7 or match['lobby_type'] == 2 or match['lobby_type'] == 5):
+                #print('skip: noob lobby type')
+                continue
+            for player in match['players']:
+                if player['leaver_status'] == 1:
+                    #print('skip: abandon')
+                    continue
+            m_id = match['match_id']
+            reqs_dict[m_id] = api.matches_get(6, m_id)
+            matches_dict[m_id] = match
         for m_id, req2 in reqs_dict.items():
-            dotamax_skill = api.matches_result(req2)
-            if (dotamax_skill == 'Very High'):
+            skill = api.matches_result(req2)
+            if (skill == 'Very High'):   
                 #add match to list
                 match = matches_dict[m_id]
                 m = dict(id=match['match_id'], seq_num=match['match_seq_num'], radiant_win=match['radiant_win'])
@@ -78,6 +87,8 @@ while True:
                 m['radiant_heroes'] = ",".join(r_heroes)
                 m['dire_heroes'] = ",".join(d_heroes)
                 matches_bulk.append(m)
+            
+                #train on batch
                 if len(matches_bulk) >= batch_size:
                     #save matches to db
                     with db.atomic():
@@ -97,11 +108,10 @@ while True:
                     drafter.train(batch_xs, batch_ys)
                     matches_bulk = list()
 
-                start_time = dt.datetime.fromtimestamp(matches[-1]['start_time'])
-                if not latest_start_time or start_time > latest_start_time:
-                    latest_start_time = start_time
-                
-                matches_parsed += 1
+                    start_time = dt.datetime.fromtimestamp(match['start_time'])
+                    if not latest_start_time or start_time > latest_start_time:
+                        latest_start_time = start_time
+                    matches_parsed += batch_size
 
     except BaseException as e:
         drafter.save()

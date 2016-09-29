@@ -9,13 +9,18 @@ class Dota_API():
     api_keys = ['FE70CE9FC0D6D99279498CE852587F59','2FEC67172AAC0C393EC209A225A7E51E']
     api_key_num = 1
     api_key = api_keys[api_key_num]
-    sleep_time = 7
+    
+    ips = ['162.213.199.143', '162.213.199.31']
+    ip_num = 0
+    
+    data_source = 4
+    
     headers = {'User-Agent': 'Script by Grue'}
 
     errors = 0
 
     session = FuturesSession()
-    session.mount('http://', source.SourceAddressAdapter('162.213.199.31'))
+    session.mount('http://', source.SourceAddressAdapter(ips[ip_num]))
 
     def matches_get(self, req_type=1, n_id='', **kwargs):
         if (req_type < 4):
@@ -35,20 +40,36 @@ class Dota_API():
             url = 'http://www.dotabuff.com/matches/' + str(n_id)
         elif req_type == 5:
             url = 'http://dotamax.com/match/detail/' + str(n_id)
-        return dict(req=self.session.get(url, timeout=7, headers=self.headers), req_type=req_type, n_id=n_id, url=url)
+        elif req_type == 6:
+            url = 'http://www.opendota.com/matches/' + str(n_id)
+        return dict(req=self.session.get(url, timeout=7, headers=self.headers), req_type=req_type, n_id=n_id, url=url, ip_num=self.ip_num)
 
     def matches_result(self, request):
         req = request['req']
         try:
             res = req.result()
-        except (requests.ConnectionError, requests.Timeout, socket.timeout):
+        except (requests.ConnectionError, requests.Timeout, socket.timeout) as e:
             return self.retry_request(request)
         if (res.status_code != 200):
-            return self.retry_request(request)
-        if (request['req_type']==4):
+            #print(res)
+            if res.status_code == 404 and request['req_type'] == 6:
+                #match not found
+                return None
+            self.session = FuturesSession()
+            # if last IP cycle through data sources
+            if self.ip_num == len(self.ips) - 1:
+                if request['req_type'] == 4 or request['req_type'] == 6:
+                    request['req_type'] = (4 if (request['req_type'] == 6) else 6)
+                    self.data_source = request['req_type']
+            self.ip_num = (request['ip_num']+1) % len(self.ips)
+            self.session.mount('http://', source.SourceAddressAdapter(self.ips[self.ip_num]))
+            return self.retry_request(request, sleep=2)
+        if request['req_type']==4:
             return self.parse_skill(res)
         if request['req_type']==5:
             return self.parse_dota_max(res)
+        if request['req_type']==6:
+            return self.parse_opendota_skill(res)
         try:
             matches = res.json()['result']['matches']
         except:
@@ -60,13 +81,10 @@ class Dota_API():
         return matches
 
 
-    def retry_request(self, request, sleep=None):
+    def retry_request(self, request, sleep=7):
         #print(request)
         self.errors += 1
-        if sleep:
-            time.sleep(sleep)
-        else:
-            time.sleep(self.sleep_time)
+        time.sleep(sleep)
         return self.matches_result(self.matches_get(**request))
     
     def parse_skill(self, response):
@@ -95,4 +113,17 @@ class Dota_API():
             html = html_split[0]
         else:
             return None
+        return html
+    
+    def parse_opendota_skill(self, response):
+        html = response.text
+        html_split = html.split('<th>Skill</th>')
+        if len(html_split) < 2:
+            return None
+        html = html_split[1]
+        html = html.split('</td></tr></tbody></table></div>')[0]
+        start_index = html.rfind('<td>')
+        if start_index < 0:
+            return None
+        html = html[start_index+4:]
         return html

@@ -321,7 +321,7 @@
                 r_suggest = r_suggest.sort(function(b,a){
                     return a.score-b.score;
                 })
-                for (var i=0;i<((25 < r_suggest.length)? 25 : r_suggest.length);i++){
+                for (var i=0;i<((80 < r_suggest.length)? 80 : r_suggest.length);i++){
                     var hero = r_suggest[i];
                     var score = ((hero.score-prediction[0])*100).toFixed(1);
                     if (score > 0) {
@@ -348,7 +348,7 @@
                 d_suggest = d_suggest.sort(function(b,a){
                     return a.score-b.score;
                 })
-                for (var i=0;i<((25 < d_suggest.length)? 25 : d_suggest.length);i++){
+                for (var i=0;i<((80 < d_suggest.length)? 80 : d_suggest.length);i++){
                     var hero = d_suggest[i];
                     var score = ((hero.score-prediction[1])*100).toFixed(1);
                     if (score > 0) {
