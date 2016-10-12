@@ -47,51 +47,77 @@ mmr_scale = np.load('data/mmr_scale.npy')
 mmr_default = 4000
     
 # Parameters
-learning_rate = 0.0001
-epoch_size = 1500
+learning_rate = 0.001
+test_batch = 1500
 max_heroes = 120
 
 # Network Parameters
-n_hidden_1 = max_heroes * 10
-n_hidden_2 = max_heroes * 10
+n_hidden_1 = 2500
+n_hidden_2 = 2000
+n_hidden_3 = 1500
+n_hidden_4 = 600
 n_input = max_heroes * 2
 n_out = 2
 
 # Placeholders
-x = tf.placeholder("float", [None, n_input])
-y = tf.placeholder("float", [None, n_out])
-layer_opac = tf.placeholder("float")
+with tf.name_scope("inputs"):
+    x = tf.placeholder("float", [None, n_input])
+    y = tf.placeholder("float", [None, n_out])
+    layer_opac = tf.placeholder("float")
 
 # Create model
 def multilayer_perceptron(_X, _weights, _biases, _layer_opac):
-    layer_1 = tf.nn.relu(tf.add(tf.matmul(_X, _weights['s1']), _biases['b1']))
-    layer_1 = tf.nn.dropout(layer_1, _layer_opac)
-    layer_2 = tf.nn.relu(tf.add(tf.matmul(layer_1, _weights['s2']), _biases['b2']))
-    layer_2 = tf.nn.dropout(layer_2, _layer_opac)
-    return tf.add(tf.matmul(layer_2, _weights['s3']), _biases['b3'])
+    with tf.name_scope("layer1"):
+        layer_1 = tf.nn.relu(tf.add(tf.matmul(_X, _weights['w1']), _biases['b1']))
+        layer_1 = tf.nn.dropout(layer_1, _layer_opac)
+    with tf.name_scope("layer2"):
+        layer_2 = tf.nn.relu(tf.add(tf.matmul(layer_1, _weights['w2']), _biases['b2']))
+        layer_2 = tf.nn.dropout(layer_2, _layer_opac)
+    with tf.name_scope("layer3"):
+        layer_3 = tf.nn.relu(tf.add(tf.matmul(layer_2, _weights['w3']), _biases['b3']))
+        layer_3 = tf.nn.dropout(layer_3, _layer_opac)
+    with tf.name_scope("layer4"):
+        layer_4 = tf.nn.relu(tf.add(tf.matmul(layer_3, _weights['w4']), _biases['b4']))
+        layer_4 = tf.nn.dropout(layer_4, _layer_opac)
+    with tf.name_scope("layer5"):
+        out = tf.add(tf.matmul(layer_4, _weights['w5']), _biases['b5'])
+    return out
 
 # Weight & bias
 weights = {
-    's1': tf.Variable(tf.random_normal([n_input, n_hidden_1], stddev=0.06, mean=0.0), name='weights1'),
-    's2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2], stddev=0.06, mean=0.0), name='weights2'),
-    's3': tf.Variable(tf.random_normal([n_hidden_2, n_out], stddev=0.06, mean=0.0), name='weights3')
+    'w1': tf.Variable(tf.random_normal([n_input, n_hidden_1], stddev=0.06, mean=0.0), name='weights1'),
+    'w2': tf.Variable(tf.random_normal([n_hidden_1, n_hidden_2], stddev=0.06, mean=0.0), name='weights2'),
+    'w3': tf.Variable(tf.random_normal([n_hidden_2, n_hidden_3], stddev=0.06, mean=0.0), name='weights3'),
+    'w4': tf.Variable(tf.random_normal([n_hidden_3, n_hidden_4], stddev=0.06, mean=0.0), name='weights4'),
+    'w5': tf.Variable(tf.random_normal([n_hidden_4, n_out], stddev=0.06, mean=0.0), name='weights5')
 }
 biases = {
     'b1': tf.Variable(tf.random_normal([n_hidden_1], stddev=0.002, mean=0.01), name='biases1'),
     'b2': tf.Variable(tf.random_normal([n_hidden_2], stddev=0.002, mean=0.01), name='biases2'),
-    'b3': tf.Variable(tf.random_normal([n_out], stddev=0.002, mean=0.01), name='biases3')
+    'b3': tf.Variable(tf.random_normal([n_hidden_3], stddev=0.002, mean=0.01), name='biases3'),
+    'b4': tf.Variable(tf.random_normal([n_hidden_4], stddev=0.002, mean=0.01), name='biases4'),
+    'b5': tf.Variable(tf.random_normal([n_out], stddev=0.002, mean=0.01), name='biases5')
 }
 
+for name, var in weights.items():
+    tf.histogram_summary(name, var)
+for name, var in biases.items():
+    tf.histogram_summary(name, var)
 
 # Define model operations
 pred = multilayer_perceptron(x, weights, biases, layer_opac)
-cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+with tf.name_scope("cost"):
+    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+    tf.scalar_summary("cost_function", cost)
+optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
 correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+with tf.name_scope("accuracy"):
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+    tf.scalar_summary("accuracy", accuracy)
 init = tf.initialize_all_variables()
 saver2 = tf.train.Saver(list(weights.values()) + list(biases.values()))
 saver = tf.train.Saver(tf.all_variables())
+merged_summary_op = tf.merge_all_summaries()
 
 def softmax(w, scale=1):
     w = np.array(w)
@@ -104,7 +130,7 @@ def softmax(w, scale=1):
 sess = tf.Session()
 
 class DotoAnn:
-    def __init__(self): 
+    def __init__(self):
         self.heroes = heroes
         self.hero_translations = hero_translations
         if os.path.isfile(weights_path):
@@ -113,6 +139,7 @@ class DotoAnn:
         else:
             print("Weights file not found")
             sess.run(init)
+        self.summary_writer = tf.train.SummaryWriter('/root/tensorboard', graph=sess.graph)
             
     def save(self):
         saver.save(sess, weights_path)
@@ -248,20 +275,28 @@ class DotoAnn:
         return resp
         
     def train(self, xs, ys):
-        sess.run(optimizer, feed_dict={x: xs, y: ys, layer_opac: 0.5})
-        
+        sess.run(optimizer, feed_dict={x: xs, y: ys, layer_opac: 0.6})
+        summary_str = sess.run(merged_summary_op, feed_dict={x: xs, y: ys, layer_opac: 1})
+        self.summary_writer.add_summary(summary_str)
+
     def test_accuracy(self, xs=None, ys=None):
         if xs is None:
-            xs = np.zeros((epoch_size, n_input), np.int)
-            ys = np.zeros((epoch_size, n_out), np.int)
+            xs = np.zeros((test_batch, n_input), np.int)
+            ys = np.zeros((test_batch, n_out), np.int)
             i=0
-            for m in Match.select().order_by(fn.Random()).limit(epoch_size):
-            #for m in Match.select().order_by(Match.seq_num.desc()).limit(epoch_size):
+            for m in Match.select().order_by(fn.Random()).limit(test_batch):
+            #for m in Match.select().order_by(Match.seq_num.desc()).limit(test_batch):
+                #for h in m.radiant_heroes.split(","):
+                #    xs[i][int(h)] = 1
+                #for h in m.dire_heroes.split(","):
+                #    xs[i][int(h) + max_heroes] = 1
+                #ys[i][0 if m.radiant_win else 1] = 1
+                
                 for h in m.radiant_heroes.split(","):
-                    xs[i][int(h)] = 1
-                for h in m.dire_heroes.split(","):
                     xs[i][int(h) + max_heroes] = 1
-                ys[i][not m.radiant_win] = 1
+                for h in m.dire_heroes.split(","):
+                    xs[i][int(h)] = 1
+                ys[i][1 if m.radiant_win else 0] = 1
                 i+=1
         return sess.run(accuracy, feed_dict={x: xs, y: ys, layer_opac: 1})
     

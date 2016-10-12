@@ -23,9 +23,9 @@ req = api.matches_get(n_id=next_id)
 matches_bulk = list()
 batch_size = 64
 
-while True:
-    i += 1
-    try:
+try:
+    while True:
+        i += 1
         if i%100==1:
             print('Errors: ', api.errors)
             print('Matches: ', matches_parsed)
@@ -103,7 +103,7 @@ while True:
                             batch_xs[i2][int(h)] = 1
                         for h in m['dire_heroes'].split(","):
                             batch_xs[i2][int(h) + max_heroes] = 1
-                        batch_ys[i2][not m['radiant_win']] = 1
+                        batch_ys[i2][0 if m['radiant_win'] else 1] = 1
                         i2+=1
                     drafter.train(batch_xs, batch_ys)
                     matches_bulk = list()
@@ -112,19 +112,14 @@ while True:
                     if not latest_start_time or start_time > latest_start_time:
                         latest_start_time = start_time
                     matches_parsed += batch_size
-
-    except BaseException as e:
         drafter.save()
-        db.close()
-        sess.close()
-        print("Errors: ", api.errors)
-        print("Matches: ", matches_parsed)
-        print("Saved")
-        raise e
-    
-drafter.save()
-db.close()
-sess.close()
-print("Errors: ", api.errors)
-print("Matches: ", matches_parsed)
-print("Saved")
+
+except BaseException as e:
+    raise e
+finally:
+    drafter.save()
+    db.close()
+    sess.close()
+    print("Errors: ", api.errors)
+    print("Matches: ", matches_parsed)
+    print("Saved")

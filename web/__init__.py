@@ -6,7 +6,7 @@ import drafterANN
 drafter = drafterANN.DotoAnn()
 from web import views
 
-refresh_time = 60*60*12
+refresh_time = 60*5
 def refresh():
     threading.Timer(refresh_time, refresh).start()
     drafter.reload()
