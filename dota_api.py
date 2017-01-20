@@ -41,7 +41,7 @@ class Dota_API():
         elif req_type == 5:
             url = 'http://dotamax.com/match/detail/' + str(n_id)
         elif req_type == 6:
-            url = 'http://www.opendota.com/matches/' + str(n_id)
+            url = 'http://api.opendota.com/api/matches/' + str(n_id)
         return dict(req=self.session.get(url, timeout=7, headers=self.headers), req_type=req_type, n_id=n_id, url=url, ip_num=self.ip_num)
 
     def matches_result(self, request):
@@ -51,9 +51,8 @@ class Dota_API():
         except (requests.ConnectionError, requests.Timeout, socket.timeout) as e:
             return self.retry_request(request)
         if (res.status_code != 200):
-            #print(res)
-            if res.status_code == 404 and request['req_type'] == 6:
-                #match not found
+            if (res.status_code == 404 and request['req_type'] == 6):
+                #not found
                 return None
             self.session = FuturesSession()
             # if last IP cycle through data sources
@@ -63,12 +62,16 @@ class Dota_API():
                     self.data_source = request['req_type']
             self.ip_num = (request['ip_num']+1) % len(self.ips)
             self.session.mount('http://', source.SourceAddressAdapter(self.ips[self.ip_num]))
-            return self.retry_request(request, sleep=2)
+            return self.retry_request(request, sleep=1)
         if request['req_type']==4:
             return self.parse_skill(res)
         if request['req_type']==5:
             return self.parse_dota_max(res)
         if request['req_type']==6:
+            #switch IPs and wait 0.5 seconds so that it is 1 request per second per IP
+            time.sleep(1/len(self.ips))
+            self.ip_num = (request['ip_num']+1) % len(self.ips)
+            self.session.mount('http://', source.SourceAddressAdapter(self.ips[self.ip_num]))
             return self.parse_opendota_skill(res)
         try:
             matches = res.json()['result']['matches']
@@ -116,14 +119,9 @@ class Dota_API():
         return html
     
     def parse_opendota_skill(self, response):
-        html = response.text
-        html_split = html.split('<th>Skill</th>')
-        if len(html_split) < 2:
+        m = response.json()
+        if 'skill' not in m:
             return None
-        html = html_split[1]
-        html = html.split('</td></tr></tbody></table></div>')[0]
-        start_index = html.rfind('<td>')
-        if start_index < 0:
-            return None
-        html = html[start_index+4:]
-        return html
+        if m['skill'] == 3:
+            return 'Very High'
+        return m['skill']

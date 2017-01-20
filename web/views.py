@@ -9,8 +9,8 @@ def index():
     
 @app.route('/calc')
 def calc():
-    r_heroes = request.args['r_hero_input'].split(',')
-    d_heroes = request.args['d_hero_input'].split(',')
+    r_heroes = [h['hero'] for h in json.loads(request.args['r_hero_input'])]
+    d_heroes = [h['hero'] for h in json.loads(request.args['d_hero_input'])]
     mmr = int(request.args['mmr']) if 'mmr' in request.args else 4000
     return json.dumps(drafter.queryDraft(r_heroes, d_heroes, mmr))
     

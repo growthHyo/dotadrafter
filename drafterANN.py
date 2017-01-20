@@ -81,6 +81,7 @@ def multilayer_perceptron(_X, _weights, _biases, _layer_opac):
         layer_4 = tf.nn.dropout(layer_4, _layer_opac)
     with tf.name_scope("layer5"):
         out = tf.add(tf.matmul(layer_4, _weights['w5']), _biases['b5'])
+        #out = tf.matmul(layer_4, _weights['w5'])
     return out
 
 # Weight & bias
@@ -204,21 +205,29 @@ class DotoAnn:
         for h in heroes:
             if h not in r_heroes and h not in d_heroes:
                 inp[h][h] = 1
-
-        for h in heroes:
-            if h not in r_heroes and h not in d_heroes:
                 inp[h+max_heroes][h + max_heroes] = 1
+            elif h in r_heroes:
+                inp[h][h] = 0
+            elif h in d_heroes:
+                inp[h+max_heroes][h+max_heroes] = 0
                 
         out = self.run(inp, mmr)
         current_ch = out[n_input]
         
-        picks = []
-        counters = []
+        r_next = []
+        d_next = []
+        r_current = []
+        d_current = []
 
         for h in heroes:
             if h not in r_heroes and h not in d_heroes:
-                picks.append({'hero':heroes[h], 'score':float(out[h][0])})
-                counters.append({'hero':heroes[h], 'score':float(out[h+max_heroes][1])})
+                r_next.append({'hero':heroes[h], 'score':float(out[h][0])})
+                d_next.append({'hero':heroes[h], 'score':float(out[h+max_heroes][1])})
+                
+        for h in r_heroes:
+            r_current.append({'hero':heroes[h], 'score':float(out[h][0])})
+        for h in d_heroes:
+            d_current.append({'hero':heroes[h], 'score':float(out[h+max_heroes][1])})
 
         resp = dict()
         #resp = {'r_picks':'','d_picks':''}
@@ -268,10 +277,10 @@ class DotoAnn:
             
         resp['prediction'] = current_ch.tolist()
         resp['heroes'] = dict()
-        resp['heroes']['r'] = [heroes[h] for h in r_heroes]
-        resp['heroes']['d'] = [heroes[h] for h in d_heroes]
-        resp['heroes']['r_next'] = picks
-        resp['heroes']['d_next'] = counters
+        resp['heroes']['r_next'] = r_next
+        resp['heroes']['d_next'] = d_next
+        resp['heroes']['r_current'] = r_current
+        resp['heroes']['d_current'] = d_current
         return resp
         
     def train(self, xs, ys):
@@ -286,17 +295,17 @@ class DotoAnn:
             i=0
             for m in Match.select().order_by(fn.Random()).limit(test_batch):
             #for m in Match.select().order_by(Match.seq_num.desc()).limit(test_batch):
-                #for h in m.radiant_heroes.split(","):
-                #    xs[i][int(h)] = 1
-                #for h in m.dire_heroes.split(","):
-                #    xs[i][int(h) + max_heroes] = 1
-                #ys[i][0 if m.radiant_win else 1] = 1
-                
                 for h in m.radiant_heroes.split(","):
-                    xs[i][int(h) + max_heroes] = 1
-                for h in m.dire_heroes.split(","):
                     xs[i][int(h)] = 1
-                ys[i][1 if m.radiant_win else 0] = 1
+                for h in m.dire_heroes.split(","):
+                    xs[i][int(h) + max_heroes] = 1
+                ys[i][0 if m.radiant_win else 1] = 1
+                
+                #for h in m.radiant_heroes.split(","):
+                #    xs[i][int(h) + max_heroes] = 1
+                #for h in m.dire_heroes.split(","):
+                #    xs[i][int(h)] = 1
+                #ys[i][1 if m.radiant_win else 0] = 1
                 i+=1
         return sess.run(accuracy, feed_dict={x: xs, y: ys, layer_opac: 1})
     

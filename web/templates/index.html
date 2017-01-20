@@ -149,6 +149,18 @@
                 margin:10px;
                 cursor:pointer;
                 cursor:hand;
+                position:relative;
+            }
+            
+            div.pick > div.score {
+                position: absolute;
+                bottom:0;
+                left:0;
+                right:0;
+                color: white;
+                text-align: center;
+                background: black;
+                opacity: 0.7;
             }
             
             div.nopick{
@@ -264,11 +276,25 @@
                 
                 for (h in radiant_heroes){
                     var hero = radiant_heroes[h];
-                    $("#r_heroes").append('<div id="' + hero + '" title="' + hero + '" class="pick">' + get_hero_portrait(hero, true) + '</div>');
+                    var score = ((prediction[0]-hero.score)*100).toFixed(1);
+                    if (score > 0) {
+                        score = "+" + score;
+                    }
+                    $("#r_heroes").append('<div id="' + hero.hero + '" title="' + hero.hero + '" class="pick">' + 
+                        get_hero_portrait(hero.hero, true) + 
+                        '<div class="score">' + score + '</div>' +
+                    '</div>');
                 }
                 for (h in dire_heroes){
                     var hero = dire_heroes[h];
-                    $("#d_heroes").append('<div id="' + hero + '" title="' + hero + '" class="pick">' + get_hero_portrait(hero, true) + '</div>');
+                    var score = ((prediction[1]-hero.score)*100).toFixed(1);
+                    if (score > 0) {
+                        score = "+" + score;
+                    }
+                    $("#d_heroes").append('<div id="' + hero.hero + '" title="' + hero.hero + '" class="pick">' +
+                        get_hero_portrait(hero.hero, true) + 
+                        '<div class="score">' + score + '</div>' +
+                    '</div>');
                 }
                 
                 var d_slots = 5-$("#d_heroes").children().length;
@@ -285,8 +311,11 @@
                         return;
                     }
                     if ($(this)[0].id.length > 0){
-                        if (radiant_heroes.indexOf($(this)[0].id) > -1){
-                            radiant_heroes.splice(radiant_heroes.indexOf($(this)[0].id), 1);
+                        for (var h in radiant_heroes) {
+                            if (radiant_heroes[h].hero == $(this)[0].id) {
+                                radiant_heroes.splice(h, 1);
+                                break;
+                            }
                         }
                         calc();
                     }
@@ -296,8 +325,11 @@
                         return;
                     }
                     if ($(this)[0].id.length > 0){
-                        if (dire_heroes.indexOf($(this)[0].id) > -1){
-                            dire_heroes.splice(dire_heroes.indexOf($(this)[0].id), 1);
+                        for (var h in dire_heroes) {
+                            if (dire_heroes[h].hero == $(this)[0].id) {
+                                dire_heroes.splice(h, 1);
+                                break;
+                            }
                         }
                         calc();
                     }
@@ -385,8 +417,9 @@
                 
                 draw_picks();
                 
-                radiant_heroes.push($("#r_hero_input").val().toLowerCase());
-                dire_heroes.push($("#d_hero_input").val().toLowerCase());
+                
+                radiant_heroes.push({hero:$("#r_hero_input").val().toLowerCase()});
+                dire_heroes.push({hero:$("#d_hero_input").val().toLowerCase()});
                 
                 $("#r_hero_input").val('');
                 $("#d_hero_input").val('');
@@ -395,16 +428,16 @@
                     dataType: "json",
                     url: "/calc",
                     data: {
-                        r_hero_input: radiant_heroes.slice(0,5).join(','),
-                        d_hero_input: dire_heroes.slice(0,5).join(','),
+                        r_hero_input: JSON.stringify(radiant_heroes.slice(0,5)),
+                        d_hero_input: JSON.stringify(dire_heroes.slice(0,5)),
                         mmr: $("#mmr").slider("value")
                     }
                 }).done(function(data) {
-                    radiant_heroes = data.heroes.r;
-                    dire_heroes = data.heroes.d;
+                    radiant_heroes = data.heroes.r_current;
+                    dire_heroes = data.heroes.d_current;
+                    prediction = data.prediction;
                     draw_picks();
                     
-                    prediction = data.prediction;
                     $("#r_score").html((data.prediction[0]*100).toFixed(1) + "%")
                     $("#d_score").html((data.prediction[1]*100).toFixed(1) + "%")
                     
@@ -438,9 +471,17 @@
             }
             
             var share = function(){
+                var r_heroes = [];
+                for (var h in radiant_heroes) {
+                    r_heroes.push(radiant_heroes[h].hero);
+                }
+                var d_heroes = [];
+                for (var h in dire_heroes) {
+                    d_heroes.push(dire_heroes[h].hero);
+                }
                 var url = 'http://' + window.location.hostname + "/";
-                url += "?radiant_heroes=" + radiant_heroes.join(",");
-                url += "&dire_heroes=" + dire_heroes.join(",");
+                url += "?radiant_heroes=" + r_heroes.join(",");
+                url += "&dire_heroes=" + d_heroes.join(",");
                 url += "&mmr=" + $("#mmr").slider("value");
                 window.prompt("Copy URL:", encodeURI(url));
             }
@@ -467,10 +508,18 @@
                 $("button").button();
                 var args = get_args();
                 if (args.radiant_heroes) {
-                    radiant_heroes = args.radiant_heroes.split(",");
+                    var heroes = [];
+                    args.radiant_heroes.split(",").forEach(function(h) {
+                        heroes.push({hero:h});
+                    });
+                    radiant_heroes = heroes;
                 }
                 if (args.dire_heroes) {
-                    dire_heroes = args.dire_heroes.split(",");
+                    var heroes = [];
+                    args.dire_heroes.split(",").forEach(function(h) {
+                        heroes.push({hero:h});
+                    });
+                    dire_heroes = heroes;
                 }
                 if (args.mmr) {
                     $("#mmr").slider("value", args.mmr);
@@ -518,7 +567,7 @@
                 
                 <div id="search_inputs">
                     <div>
-                        <input id="r_hero_input">
+                        <input id="r_hero_input" placeholder="Search...">
                     </div>
                     <div style="height:50px; flex:1">
                         <div id="loader" style="margin:auto; width:40px; display:none">
@@ -526,7 +575,7 @@
                         </div>
                     </div>
                     <div>
-                        <input id="d_hero_input">
+                        <input id="d_hero_input" placeholder="Search...">
                     </div>
                 </div>
                 
