@@ -9,7 +9,7 @@ sys.setrecursionlimit(2000)
 drafter = DotoAnn()
 api = Dota_API()
 
-next_id = '2238010584'
+next_id = '2238020584'
 latest_start_time = None
 
 for m in Match.select().order_by(Match.seq_num.desc()).limit(1):
@@ -23,7 +23,7 @@ req = api.matches_get(n_id=next_id)
 
 matches_bulk = list()
 train_batch = list()
-batch_size = 64
+batch_size = 128
 
 try:
     while True:
@@ -88,7 +88,7 @@ try:
                 matches_dict[m_id] = match
             for m_id, req2 in reqs_dict.items():
                 skill = api.matches_result(req2)
-                if (skill == 'Very High'):   
+                if (skill == 'Very High' or True):   
                     #add match to list
                     match = matches_dict[m_id]
                     r_heroes = []

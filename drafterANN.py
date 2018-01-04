@@ -47,9 +47,11 @@ mmr_scale = np.load('data/mmr_scale.npy')
 mmr_default = 4000
     
 # Parameters
-learning_rate = 0.001
+learning_rate = 0.01
+weight_decay = 0.0001
+momentum = 0.9
 test_batch = 1500
-max_heroes = 120
+max_heroes = 200
 
 # Network Parameters
 n_hidden_1 = 2500
@@ -108,9 +110,11 @@ for name, var in biases.items():
 # Define model operations
 pred = multilayer_perceptron(x, weights, biases, layer_opac)
 with tf.name_scope("cost"):
-    cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pred, y))
+    regularizers = tf.nn.l2_loss(weights['w1']) + tf.nn.l2_loss(weights['w2']) + tf.nn.l2_loss(weights['w3'])  + tf.nn.l2_loss(weights['w4']) + tf.nn.l2_loss(weights['w5'])
+    cost = tf.reduce_mean(loss + weight_decay * regularizers)
     tf.scalar_summary("cost_function", cost)
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate).minimize(cost)
+optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=momentum).minimize(cost)
 correct_prediction = tf.equal(tf.argmax(pred, 1), tf.argmax(y, 1))
 with tf.name_scope("accuracy"):
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
