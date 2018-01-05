@@ -6,7 +6,7 @@ import time
 MAX_HEROES = 200
 BATCH_SIZE = 6400
 
-conn = sqlite3.connect('../data/pub_matches.db')
+conn = sqlite3.connect('data/pub_matches.db')
 c = conn.cursor()
 
 model = get_model()
