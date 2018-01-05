@@ -127,7 +127,7 @@ try:
 
                         #train the network
                         batch_xs = np.zeros((len(train_batch), n_input), np.int)
-                        batch_ys = np.zeros((len(train_batch), n_out), np.int)
+                        batch_ys = np.zeros((len(train_batch), 2), np.int)
                         i2=0
                         for m in train_batch:
                             for h in m['radiant_heroes'].split(","):
@@ -154,7 +154,6 @@ except BaseException as e:
 finally:
     drafter.save()
     db.close()
-    sess.close()
     print("Errors: ", api.errors)
     print("Matches: ", matches_parsed)
     print("Saved")
